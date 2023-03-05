@@ -1147,7 +1147,15 @@ impl Output {
 
 impl Drop for InputOutput {
     fn drop(&mut self) {
-        self.actually_blocking_die();
+        if self.output.tx.send(Request::Die).is_ok() {
+            loop {
+                // avoid tokio's restriction on blocking by spinning instead
+                match self.rx.try_recv() {
+                    Err(tokio_mpsc::error::TryRecvError::Disconnected) => break,
+                    _ => (),
+                }
+            }
+        }
         LISO_IS_ACTIVE.store(false, Ordering::Release);
     }
 }
