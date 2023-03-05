@@ -29,15 +29,18 @@ fn parse_csi_sequence(seq: &[u8], req_tx: &mut std_mpsc::Sender<Request>)
         b"[B" => KeyCode::Down,
         b"[C" => KeyCode::Right,
         b"[D" => KeyCode::Left,
+        b"[1;5C" => KeyCode::Right,
+        b"[1;5D" => KeyCode::Left,
         b"[3~" => KeyCode::Delete,
         b"[H" => KeyCode::Home,
         b"[F" => KeyCode::End,
         _ => return Ok(()), // unknown
     };
-    let event = KeyEvent{
+    let mut event = KeyEvent{
         code,
         modifiers:event::KeyModifiers::empty(),
     };
+    event.modifiers.set(event::KeyModifiers::CONTROL, seq.starts_with(b"[1;5"));
     let event = Event::Key(event);
     req_tx.send(Request::CrosstermEvent(event))?;
     Ok(())

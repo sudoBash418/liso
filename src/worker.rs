@@ -637,6 +637,34 @@ impl TtyState {
         }
         Ok(())
     }
+    fn handle_ctrl_right_arrow(&mut self)
+        -> LifeOrDeath {
+        self.dismiss_notice()?;
+        if self.input_cursor < self.input.len() {
+            self.rollout_needed = true;
+            self.input_cursor += 1;
+            while !self.input.as_bytes().get(self.input_cursor)
+                    .map_or(true, u8::is_ascii_whitespace)
+                || self.cursor_on_invisible() {
+                    self.input_cursor += 1;
+                }
+        }
+        Ok(())
+    }
+    fn handle_ctrl_left_arrow(&mut self)
+        -> LifeOrDeath {
+        self.dismiss_notice()?;
+        if self.input_cursor > 0 {
+            self.rollout_needed = true;
+            self.input_cursor -= 1;
+            while !(self.input_cursor == 0 || self.input.as_bytes().get(self.input_cursor - 1)
+                    .map_or(true, u8::is_ascii_whitespace))
+                || self.cursor_on_invisible() {
+                    self.input_cursor -= 1;
+                }
+        }
+        Ok(())
+    }
     fn handle_home(&mut self)
         -> LifeOrDeath {
         self.dismiss_notice()?;
@@ -900,6 +928,10 @@ impl TtyState {
                     if k.code == KeyCode::Char('i') { self.consecutive_completion_presses = self.consecutive_completion_presses.saturating_add(1); }
                     else { self.consecutive_completion_presses = 0; } 
                     match k.code {
+                        // Control-Left (backward one word)
+                        KeyCode::Left => self.handle_ctrl_left_arrow()?,
+                        // Control-Right (forward one word)
+                        KeyCode::Right => self.handle_ctrl_right_arrow()?,
                         // Control-A (go to beginning of line)
                         KeyCode::Char('a') => self.handle_home()?,
                         // Control-B (backward one char)
