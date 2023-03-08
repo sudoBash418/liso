@@ -1152,7 +1152,7 @@ impl Drop for InputOutput {
                 // avoid tokio's restriction on blocking by spinning instead
                 match self.rx.try_recv() {
                     Err(tokio_mpsc::error::TryRecvError::Disconnected) => break,
-                    _ => (),
+                    _ => std::thread::yield_now(),
                 }
             }
         }
